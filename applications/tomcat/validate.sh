@@ -85,6 +85,7 @@ NAMESPACE="ns-tomcat"
     
     log_level -i "Check if context is selected"
     CONTEXT_STATUS=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config current-context")
+    CONTEXT_STATUS=`echo $CONTEXT_STATUS | sed 's/\\r//g'`
     
     if [[ $CONTEXT_STATUS == $CONTEXT_NAME ]]; then
         log_level -i "Correct context is selected"
