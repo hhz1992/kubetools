@@ -104,8 +104,10 @@ touch $LOG_FILENAME
         exit 1
     fi
     
+    KNOWN_HOSTS_OPTIONS='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'
+    
     log_level -i "Create test folder($TEST_DIRECTORY)"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "mkdir -p $TEST_DIRECTORY"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS} $IDENTITY_FILE $USER_NAME@$MASTER_IP "mkdir -p $TEST_DIRECTORY"
 
     log_level -i "Copy files to K8s master node."
     scp -i $IDENTITY_FILE \
@@ -115,14 +117,14 @@ touch $LOG_FILENAME
     log_level -i "=========================================================================="
     log_level -i "Installing nginx."
 
-    ssh -t -i $IDENTITY_FILE \
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS} $IDENTITY_FILE \
     $USER_NAME@$MASTER_IP \
     "sudo chmod 744 $TEST_DIRECTORY/$NGINX_DEPLOY_FILENAME; cd $TEST_DIRECTORY;"
-    nginx=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "cd $TEST_DIRECTORY;kubectl create -f $NGINX_DEPLOY_FILENAME";sleep 10)
-    nginx_deploy=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "cd $TEST_DIRECTORY;kubectl get deployment -o json > nginx_deploy.json")
-    nginx_status=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "cd $TEST_DIRECTORY;cat nginx_deploy.json | jq '.items[0]."status"."conditions"[0].type'" | grep "Available";sleep 2m)
-    nginx_services=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "cd $TEST_DIRECTORY;kubectl get services -o json > nginx_service.json")
-    app_nginx=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo kubectl get services nginxservice -o=custom-columns=NAME:.status.loadBalancer.ingress[0].ip | grep -oP '(\d{1,3}\.){1,3}\d{1,3}'")
+    nginx=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS} $IDENTITY_FILE $USER_NAME@$MASTER_IP "cd $TEST_DIRECTORY;kubectl create -f $NGINX_DEPLOY_FILENAME";sleep 10)
+    nginx_deploy=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS} $IDENTITY_FILE $USER_NAME@$MASTER_IP "cd $TEST_DIRECTORY;kubectl get deployment -o json > nginx_deploy.json")
+    nginx_status=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS} $IDENTITY_FILE $USER_NAME@$MASTER_IP "cd $TEST_DIRECTORY;cat nginx_deploy.json | jq '.items[0]."status"."conditions"[0].type'" | grep "Available";sleep 2m)
+    nginx_services=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS} $IDENTITY_FILE $USER_NAME@$MASTER_IP "cd $TEST_DIRECTORY;kubectl get services -o json > nginx_service.json")
+    app_nginx=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS} $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo kubectl get services nginxservice -o=custom-columns=NAME:.status.loadBalancer.ingress[0].ip | grep -oP '(\d{1,3}\.){1,3}\d{1,3}'")
     echo $app_nginx > $APP_SERVICE
 
     if [ $? == 0 ]; then

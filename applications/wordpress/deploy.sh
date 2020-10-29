@@ -91,9 +91,11 @@ touch $LOG_FILENAME
         exit 1
     fi
 
+    KNOWN_HOSTS_OPTIONS='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'
+
     ############################################################################################
     log_level -i "Create test folder($TEST_FOLDER)"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "mkdir -p $TEST_FOLDER"
+    ssh -t -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "mkdir -p $TEST_FOLDER"
 
     log_level -i "Copy file($HELM_INSTALL_FILENAME) to VM."
     scp -i $IDENTITY_FILE \
@@ -120,13 +122,13 @@ touch $LOG_FILENAME
     log_level -i "=========================================================================="
     log_level -i "Installing Wordpress app."
     # Install Wordpress app
-    ssh -t -i $IDENTITY_FILE \
+    ssh -t -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} \
     $USER_NAME@$MASTER_IP \
     "sudo chmod 744 $TEST_FOLDER/$WORDPRESS_INSTALL_FILENAME; cd $TEST_FOLDER; ./$WORDPRESS_INSTALL_FILENAME;"
-    wpRelease=$(ssh -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep 'deployed\(.*\)wordpress' | grep -Eo '^[a-z,-]+\w+'")
+    wpRelease=$(ssh -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep 'deployed\(.*\)wordpress' | grep -Eo '^[a-z,-]+\w+'")
     if [ -z "$wpRelease" ]; then
         log_level -e "Wordpress deployment failed using Helm."
-        ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo kubectl get all -o wide"
+        ssh -t -i $IDENTITY_FILE  ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "sudo kubectl get all -o wide"
         result="failed"
         printf '{"result":"%s","error":"%s"}\n' "$result" "Wordpress deployment was not successfull." > $OUTPUT_SUMMARYFILE
         exit 1

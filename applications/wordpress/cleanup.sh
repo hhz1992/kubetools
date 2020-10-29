@@ -95,28 +95,30 @@ touch $LOG_FILENAME
     log_level -i "WORDPRESS_TAR_FILENAME   : $WORDPRESS_TAR_FILENAME"
     log_level -i "------------------------------------------------------------------------"
     
+    KNOWN_HOSTS_OPTIONS='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'
+
     # Cleanup Word press app.
-    wordPressDeploymentName=$(ssh -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep 'deployed\(.*\)wordpress' | grep -Eo '^[a-z,-]+\w+' || true")
+    wordPressDeploymentName=$(ssh -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep 'deployed\(.*\)wordpress' | grep -Eo '^[a-z,-]+\w+' || true")
     if [ -z "$wordPressDeploymentName" ]; then
         log_level -w "No deployment found."
     else
         log_level -i "Removing helm deployment($wordPressDeploymentName)"
-        ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm delete $wordPressDeploymentName"
+        ssh -t -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "helm delete $wordPressDeploymentName"
         log_level -i "Wait for 30s for all pods to be deleted and removed."
         sleep 30s
     fi
     
     log_level -i "Create folder $WORDPRESS_LOG_FOLDERNAME "
-    ssh -t -i $IDENTITY_FILE \
+    ssh -t -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} \
     $USER_NAME@$MASTER_IP \
     "mkdir -p $TEST_DIRECTORY/$WORDPRESS_LOG_FOLDERNAME"
     
     log_level -i "Copy logs to $WORDPRESS_LOG_FOLDERNAME "
-    ssh -t -i $IDENTITY_FILE \
+    ssh -t -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} \
     $USER_NAME@$MASTER_IP \
     "sudo cp -R /var/log $TEST_DIRECTORY/$WORDPRESS_LOG_FOLDERNAME;"
     
-    ssh -t -i $IDENTITY_FILE \
+    ssh -t -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} \
     $USER_NAME@$MASTER_IP \
     "sudo tar -zcvf $TEST_DIRECTORY/$WORDPRESS_TAR_FILENAME $TEST_DIRECTORY/$WORDPRESS_LOG_FOLDERNAME;"
     
@@ -128,7 +130,7 @@ touch $LOG_FILENAME
     # Rechecking to make sure deployment cleanup done successfully.
     i=0
     while [ $i -lt 20 ];do
-        wpRelease=$(ssh -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep 'deployed\(.*\)wordpress' | grep -Eo '^[a-z,-]+\w+' || true")
+        wpRelease=$(ssh -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep 'deployed\(.*\)wordpress' | grep -Eo '^[a-z,-]+\w+' || true")
         if [ ! -z "$wpRelease" ]; then
             log_level -i "Removal of wordpress app in progress($wpRelease)."
             sleep 30s
@@ -148,7 +150,7 @@ touch $LOG_FILENAME
         printf '{"result":"%s"}\n' "$result" > $OUTPUT_SUMMARYFILE
     fi
     
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo rm -rf $TEST_DIRECTORY;"
+    ssh -t -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "sudo rm -rf $TEST_DIRECTORY;"
     # Create result file, even if script ends with an error
     #trap final_changes EXIT
 } 2>&1 | tee $LOG_FILENAME

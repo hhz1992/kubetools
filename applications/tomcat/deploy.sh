@@ -98,8 +98,10 @@ touch $LOG_FILENAME
         exit 1
     fi
 
+    KNOWN_HOSTS_OPTIONS='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'
+
     log_level -i "Create test folder($TEST_FOLDER)"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "mkdir -p $TEST_FOLDER"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "mkdir -p $TEST_FOLDER"
 
     log_level -i "Copy file($HELM_INSTALL_FILENAME) to VM."
     scp -i $IDENTITY_FILE \
@@ -127,36 +129,36 @@ touch $LOG_FILENAME
     fi
 
     log_level -i "Creating namespace ($NAMESPACE) for RBAC"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl create namespace $NAMESPACE"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl create namespace $NAMESPACE"
 
     log_level -i "Creating private key for user"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "openssl genrsa -out $TEST_FOLDER/tomcat.key 2048"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "openssl genrsa -out $TEST_FOLDER/tomcat.key 2048"
 
     log_level -i "Creating certificate"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "openssl req -new -key $TEST_FOLDER/tomcat.key -out $TEST_FOLDER/tomcat.csr -subj '/CN=$CLUSTER_USERNAME/O=tomcat'"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "openssl req -new -key $TEST_FOLDER/tomcat.key -out $TEST_FOLDER/tomcat.csr -subj '/CN=$CLUSTER_USERNAME/O=tomcat'"
 
     log_level -i "Signing certificate"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo openssl x509 -req -in $TEST_FOLDER/tomcat.csr -CA $KUBE_CERT_LOCATION/ca.crt -CAkey $KUBE_CERT_LOCATION/ca.key -CAcreateserial -out $TEST_FOLDER/tomcat.crt -days 500"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo openssl x509 -req -in $TEST_FOLDER/tomcat.csr -CA $KUBE_CERT_LOCATION/ca.crt -CAkey $KUBE_CERT_LOCATION/ca.key -CAcreateserial -out $TEST_FOLDER/tomcat.crt -days 500"
 
     log_level -i "Moving certificates to secure location"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "mkdir -p $TEST_FOLDER/.certs"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo mv $TEST_FOLDER/tomcat.crt $TEST_FOLDER/.certs/tomcat.crt"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo mv $TEST_FOLDER/tomcat.key $TEST_FOLDER/.certs/tomcat.key"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "mkdir -p $TEST_FOLDER/.certs"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo mv $TEST_FOLDER/tomcat.crt $TEST_FOLDER/.certs/tomcat.crt"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo mv $TEST_FOLDER/tomcat.key $TEST_FOLDER/.certs/tomcat.key"
 
     log_level -i "Setting credentials for context"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config set-credentials $CLUSTER_USERNAME --client-certificate=$TEST_FOLDER/.certs/tomcat.crt  --client-key=$TEST_FOLDER/.certs/tomcat.key"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config set-credentials $CLUSTER_USERNAME --client-certificate=$TEST_FOLDER/.certs/tomcat.crt  --client-key=$TEST_FOLDER/.certs/tomcat.key"
 
     log_level -i "Get cluster name"
-    CLUSTER_NAME=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config current-context")
+    CLUSTER_NAME=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config current-context")
 
     log_level -i "Creating the context for the the new user with cluster name ($CLUSTER_NAME)"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config set-context $CONTEXT_NAME --cluster=$CLUSTER_NAME --namespace=$NAMESPACE --user=$CLUSTER_USERNAME"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config set-context $CONTEXT_NAME --cluster=$CLUSTER_NAME --namespace=$NAMESPACE --user=$CLUSTER_USERNAME"
 
     log_level -i "Creating role for cluster"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl create -f $TEST_FOLDER/$ROLE_DEPLOYMENT_FILENAME"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl create -f $TEST_FOLDER/$ROLE_DEPLOYMENT_FILENAME"
 
     log_level -i "Creating role binding"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl create -f $TEST_FOLDER/$ROLE_BINDING_FILENAME"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl create -f $TEST_FOLDER/$ROLE_BINDING_FILENAME"
 
     install_helm_app $IDENTITY_FILE \
     $USER_NAME \

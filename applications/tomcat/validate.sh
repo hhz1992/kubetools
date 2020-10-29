@@ -58,9 +58,11 @@ NAMESPACE="ns-tomcat"
         printf '{"result":"%s","error":"%s"}\n' "failed" "Pod related to App($APPLICATION_NAME) was not successfull." >$OUTPUT_SUMMARYFILE
         exit 1
     fi
+
+    KNOWN_HOSTS_OPTIONS='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'
     
     # check_app_has_externalip set global variable IP_ADDRESS.
-    APPLICATION_RELEASE_NAME=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep 'deployed\(.*\)$APPLICATION_NAME' | grep -Eo '^[a-z,-]+\w+'")
+    APPLICATION_RELEASE_NAME=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep 'deployed\(.*\)$APPLICATION_NAME' | grep -Eo '^[a-z,-]+\w+'")
     log_level -i "APPLICATION_RELEASE_NAME:$APPLICATION_RELEASE_NAME"
     SERVICE_NAME=`echo $APPLICATION_RELEASE_NAME | sed 's/\\r//g'`
     log_level -i "SERVICE_NAME:$SERVICE_NAME"
@@ -78,13 +80,13 @@ NAMESPACE="ns-tomcat"
     fi
     
     log_level -i "Get cluster name"
-    CLUSTER_NAME=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config current-context")
+    CLUSTER_NAME=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config current-context")
     
     log_level -i "Switch to $CONTEXT_NAME context"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config use-context $CONTEXT_NAME"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config use-context $CONTEXT_NAME"
     
     log_level -i "Check if context is selected"
-    CONTEXT_STATUS=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config current-context")
+    CONTEXT_STATUS=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config current-context")
     CONTEXT_STATUS=`echo $CONTEXT_STATUS | sed 's/\\r//g'`
     
     if [[ $CONTEXT_STATUS == $CONTEXT_NAME ]]; then
@@ -96,7 +98,7 @@ NAMESPACE="ns-tomcat"
     fi
     
     log_level -i "Check if context can create deployments in default namespace"
-    CAN_DEPLOY_NS=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl auth can-i create deployments --namespace ns-tomcat || echo error")
+    CAN_DEPLOY_NS=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl auth can-i create deployments --namespace ns-tomcat || echo error")
     
     log_level -i "CAN_DEPLOY_NS:$CAN_DEPLOY_NS"
     
@@ -106,7 +108,7 @@ NAMESPACE="ns-tomcat"
     fi
     
     log_level -i "Check if context can create deployments in default namespace"
-    CAN_DEPLOY_DEFAULT=$(ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl auth can-i create deployments --namespace default || echo error")
+    CAN_DEPLOY_DEFAULT=$(ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl auth can-i create deployments --namespace default || echo error")
     
     log_level -i "CAN_DEPLOY_DEFAULT:$CAN_DEPLOY_DEFAULT"
     
@@ -116,7 +118,7 @@ NAMESPACE="ns-tomcat"
     fi
     
     log_level -i "Switch to $CLUSTER_NAME context"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config use-context $CLUSTER_NAME"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl config use-context $CLUSTER_NAME"
     
     # IP_ADDRESS variable is set in check_app_has_externalip function.
     check_app_listening_at_externalip $IP_ADDRESS

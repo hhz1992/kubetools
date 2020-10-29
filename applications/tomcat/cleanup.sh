@@ -47,13 +47,15 @@ NAMESPACE="ns-tomcat"
     log_level -i "TEST_DIRECTORY             : $TEST_DIRECTORY"
     log_level -i "------------------------------------------------------------------------"
     
+    KNOWN_HOSTS_OPTIONS='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'
+
     # Cleanup Tomcat app.
-    tomcatReleaseName=$(ssh -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep 'deployed\(.*\)$APPLICATION_NAME' | grep -Eo '^[a-z,-]+\w+' || true")
+    tomcatReleaseName=$(ssh -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep 'deployed\(.*\)$APPLICATION_NAME' | grep -Eo '^[a-z,-]+\w+' || true")
     if [ -z "$tomcatReleaseName" ]; then
         log_level -w "No deployment found."
     else
         log_level -i "Removing helm deployment($tomcatReleaseName)"
-        ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm delete $tomcatReleaseName"
+        ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm delete $tomcatReleaseName"
         log_level -i "Wait for 30s for all pods to be deleted and removed."
         sleep 30s
     fi
@@ -70,9 +72,9 @@ NAMESPACE="ns-tomcat"
     fi
     
     log_level -i "Removing namespace"
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl delete namespace $NAMESPACE"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl delete namespace $NAMESPACE"
     
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo rm -rf $TEST_DIRECTORY;"
+    ssh -t -i ${KNOWN_HOSTS_OPTIONS}  $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo rm -rf $TEST_DIRECTORY;"
     
     # Create result file, even if script ends with an error
     #trap final_changes EXIT

@@ -71,6 +71,7 @@ done
 OUTPUT_FOLDER="$(dirname $OUTPUT_SUMMARYFILE)"
 LOG_FILENAME="$OUTPUT_FOLDER/validate.log"
 touch $LOG_FILENAME
+KNOWN_HOSTS_OPTIONS='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR'
 
 {
 
@@ -86,15 +87,15 @@ touch $LOG_FILENAME
     # Check if pod is up and running
     log_level -i "Validate if pods are created and running."
     log_level -i "Get all nodes details."
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo kubectl get nodes -o wide"
+    ssh -t -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "sudo kubectl get nodes -o wide"
     log_level -i "Get Helm deployment details."
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces"
+    ssh -t -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces"
     log_level -i "Get all pods details ."
-    ssh -t -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo kubectl get all -o wide"
+    ssh -t -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "sudo kubectl get all -o wide"
 
-    wordPressDeploymentName=$(ssh -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep -i 'deployed\(.*\)wordpress' | grep -Eo '^[a-z,-]+\w+'")
-    mariadbPodstatus=$(ssh -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo kubectl get pods --selector app=mariadb | grep 'Running'")
-    wdpressPodstatus=$(ssh -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "kubectl get pods --selector app.kubernetes.io/instance=${wordPressDeploymentName} | grep 'Running'")
+    wordPressDeploymentName=$(ssh -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "helm ls -d -r --all-namespaces | grep -i 'deployed\(.*\)wordpress' | grep -Eo '^[a-z,-]+\w+'")
+    mariadbPodstatus=$(ssh -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "sudo kubectl get pods --selector app=mariadb | grep 'Running'")
+    wdpressPodstatus=$(ssh -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "kubectl get pods --selector app.kubernetes.io/instance=${wordPressDeploymentName} | grep 'Running'")
     failedPods=""
     if [ -z "$mariadbPodstatus" ]; then
         failedPods="mariadb"
@@ -115,7 +116,7 @@ touch $LOG_FILENAME
     
     # Check if App got external IP
     log_level -i "Validate if Pods got external IP address."
-    externalIp=$(ssh -i $IDENTITY_FILE $USER_NAME@$MASTER_IP "sudo kubectl get services ${wordPressDeploymentName} -o=custom-columns=NAME:.status.loadBalancer.ingress[0].ip | grep -oP '(\d{1,3}\.){1,3}\d{1,3}'")
+    externalIp=$(ssh -i $IDENTITY_FILE ${KNOWN_HOSTS_OPTIONS} $USER_NAME@$MASTER_IP "sudo kubectl get services ${wordPressDeploymentName} -o=custom-columns=NAME:.status.loadBalancer.ingress[0].ip | grep -oP '(\d{1,3}\.){1,3}\d{1,3}'")
     if [ -z "$externalIp" ]; then
         log_level -e "External IP not found for wordpress."
         result="failed"
